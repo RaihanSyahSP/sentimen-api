@@ -67,30 +67,24 @@ class Tweet:
         # Contoh query dengan aggregation pipeline
         # Menggunakan JavaScript di dalam MongoDB aggregation
         cursor = db.sample.aggregate([
-            {
-                '$match': {
-                    'full_text': {'$regex': keyword, '$options': 'i'}
-                }
-            },
-            {
-                '$addFields': {
-                    'parsed_date': {
-                        '$function': {
-                            'body': "function(created_at) { return new Date(Date.parse(created_at)); }",
-                            'args': ["$created_at"],
-                            'lang': "js"
-                        }
-                    }
-                }
-            },
-            {
-                '$match': {
-                    'parsed_date': {'$gte': start_datetime, '$lte': end_datetime}
-                }
-            },
-            {
-                '$limit': limit
+        {
+            '$match': {
+                'full_text': {'$regex': keyword, '$options': 'i'}
             }
+        },
+        {
+            '$addFields': {
+                'parsed_date': {'$toDate': '$created_at'}
+            }
+        },
+        {
+            '$match': {
+                'parsed_date': {'$gte': start_datetime, '$lte': end_datetime}
+            }
+        },
+        {
+            '$limit': limit
+        }
         ])
         return list(cursor)
     

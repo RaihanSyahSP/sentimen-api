@@ -9,10 +9,13 @@ from config.db import db
 from model.tweet import Tweet
 from service.sentiment import Sentiment
 from service.crawler import TweetCrawler
+from dotenv import load_dotenv
+
+load_dotenv()
+auth_token = os.getenv("AUTH_TOKEN")
 
 
 app = Flask(__name__)
-
 
 @app.route('/')
 def index():
@@ -35,7 +38,7 @@ def get_result():
 
         # If there are no tweets in the database, start crawling
         if not cursor or len(cursor) < jumlah_tweet:
-            tweet_crawler = TweetCrawler(auth_token="47508ef00f9549f9db3fe41951a797399c045b68", 
+            tweet_crawler = TweetCrawler(auth_token=auth_token, 
                                          search_keyword=keyword, 
                                          limit=jumlah_tweet, 
                                          start_date=start_date, 

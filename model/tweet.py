@@ -65,7 +65,6 @@ class Tweet:
         print(f"Filtering tweets from {start_datetime} to {end_datetime}")  # Debugging
         
         # Contoh query dengan aggregation pipeline
-        # Menggunakan JavaScript di dalam MongoDB aggregation
         cursor = db.sample.aggregate([
         {
             '$match': {

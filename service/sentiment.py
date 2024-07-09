@@ -6,16 +6,17 @@ import nltk
 import pickle
 
 from nltk.tokenize import word_tokenize
-from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
+from mpstemmer import MPStemmer
 from nltk.corpus import stopwords
 nltk.download('stopwords')
+stemmer = MPStemmer()
 
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 # Load the pre-trained sentiment analysis model
-model = load_model('./saved_model/model-cnn-word2vec-3-classes-stemming.h5')
+model = load_model('./saved_model/model-cnn-lstm.h5')
 
 
 class Sentiment:
@@ -49,6 +50,8 @@ class Sentiment:
         def remove_singl_char(text):
             return re.sub(r"\b[a-zA-Z]\b", "", text)
 
+        def remove_repeated_char(text):
+            return re.sub(r'(.)\1+', r'\1', text)
 
         def word_tokenize_wrapper(text):
             return word_tokenize(text)
@@ -67,14 +70,15 @@ class Sentiment:
             return [normalizad_word_dict[term] if term in normalizad_word_dict else term for term in document]
 
 
-        factory = StemmerFactory()
-        def stem_wrapper(text):
-            stemmer = factory.create_stemmer()
-            return stemmer.stem(text)
-
-
+        def stem_wrapper(term):
+            return [stemmer.stem(word) for word in term]
+        
 
         stop_words = stopwords.words('indonesian')
+
+        # Hapus kata "tidak" dari daftar stopword
+        stop_words = [word for word in stop_words if word not in ['tidak', 'baik', 'jelek', 'jangan', 'belum', 'bukan', "enggak", "engga", "bener", "benar"]]
+
         # ---------------------------- manualy add stopword  ------------------------------------
         # append additional stopword
         stop_words.extend(["yg", "dg", "rt", "dgn", "ny", "d", 'klo', 
@@ -101,6 +105,27 @@ class Sentiment:
         #remove stopword pada list token
         def stopwords_removal(words):
             return [word for word in words if word not in stop_words]
+        
+        def convert_negation(tokens):
+            negations = {'tidak', 'jangan', 'belum', 'bukan', 'enggak'}
+            result = []
+            skip_next = False
+
+            for i, word in enumerate(tokens):
+                if skip_next:
+                    skip_next = False
+                    continue
+                if word in negations and i + 1 < len(tokens):
+                    next_word = tokens[i + 1]
+                    result.append(f'{word}_{next_word}')
+                    skip_next = True
+                else:
+                    result.append(word)
+
+            return result
+        
+        def replace_nan_with_none(data):
+            return data.applymap(lambda x: None if pd.isna(x) else x)
 
         # Convert list of texts into a DataFrame
         df = pd.DataFrame(data)
@@ -108,9 +133,7 @@ class Sentiment:
         # Pastikan kolom 'predicted_label' ada, jika tidak, buat dan set semua nilai menjadi NaN
         if 'predicted_label' not in df.columns:
             df['predicted_label'] = np.nan
-            df['predicted_probability_netral'] = np.nan
-            df['predicted_probability_negatif'] = np.nan
-            df['predicted_probability_positif'] = np.nan
+            df['probability_sentiment'] = np.nan
 
         # Filter dokumen yang belum diproses
         to_process_df = df[df['predicted_label'].isna()]
@@ -125,52 +148,88 @@ class Sentiment:
             to_process_df['processed_text'] = to_process_df['processed_text'].apply(remove_whitespace_LT)
             to_process_df['processed_text'] = to_process_df['processed_text'].apply(remove_whitespace_multiple)
             to_process_df['processed_text'] = to_process_df['processed_text'].apply(remove_singl_char)
+            to_process_df['processed_text'] = to_process_df['processed_text'].apply(remove_repeated_char)
             to_process_df['processed_text'] = to_process_df['processed_text'].apply(word_tokenize_wrapper)
             to_process_df['processed_text'] = to_process_df['processed_text'].apply(normalized_term)
-            to_process_df['processed_text'] = to_process_df['processed_text'].apply(lambda x: [stem_wrapper(word) for word in x])
+            to_process_df['processed_text'] = to_process_df['processed_text'].apply(stem_wrapper)
             to_process_df['processed_text'] = to_process_df['processed_text'].apply(stopwords_removal)
+            to_process_df['processed_text'] = to_process_df['processed_text'].apply(convert_negation)
             to_process_df['processed_text'] = to_process_df['processed_text'].apply(' '.join)
 
             print("Text preprocessing done!")
 
             # # Convert the text data to sequences
-            with open('./utils/tokenizer-3classes.pickle', 'rb') as handle:
+            with open('./utils/tokenizer-cnn-lstm.pickle', 'rb') as handle:
                 tokenizer = pickle.load(handle)
 
             sequences = tokenizer.texts_to_sequences(to_process_df['processed_text'])
-            padded_sequences = pad_sequences(sequences, maxlen=100, truncating='post')
+            padded_sequences = pad_sequences(sequences, maxlen=50, truncating='post', padding='post')
 
             # # Predict the sentiment of the text data
             predictions = model.predict(padded_sequences)
+            # print(predictions)
             predicted_labels = []
             predicted_probabilities = []  # Menyimpan probabilitas prediksi untuk semua kelas
 
             for pred in predictions:
-                # Menentukan kelas berdasarkan nilai probabilitas tertinggi
-                label_index = np.argmax(pred)
-                if label_index == 0:
-                    predicted_labels.append("Netral")
-                elif label_index == 1:
-                    predicted_labels.append("Negatif")
-                else:
-                    predicted_labels.append("Positif")
-                
-                # Menyimpan probabilitas prediksi untuk semua kelas
-                predicted_probabilities.append(pred)  # Menyimpan array probabilitas dari softmax
 
+                probability_positive = pred[0] 
+                probability_negative = 1 - probability_positive
+
+                # Menambahkan probabilitas prediksi ke dalam list
+                predicted_probabilities.append({'positive': probability_positive, 'negative': probability_negative})
+
+                # 2 kelas
+                if pred > 0.5:
+                    predicted_labels.append("Positif")
+                else:
+                    predicted_labels.append("Negatif")
+                # predicted_probabilities.append(pred)    
             print("Prediction done!")
 
             # Menambahkan hasil prediksi dan probabilitas prediksi ke dalam data asli
             to_process_df['predicted_label'] = predicted_labels
-            to_process_df['predicted_probability_netral'] = [prob[0] for prob in predicted_probabilities]
-            to_process_df['predicted_probability_negatif'] = [prob[1] for prob in predicted_probabilities]
-            to_process_df['predicted_probability_positif'] = [prob[2] for prob in predicted_probabilities]
+            to_process_df['probability_sentiment'] = [predicted_probabilities[i]['positive'] if predicted_labels[i] == 'Positif' else predicted_probabilities[i]['negative'] for i in range(len(predicted_labels))]
 
             # Menggabungkan hasil kembali ke dataframe asli
             df.update(to_process_df)
+        
+        # Ganti NaN dengan None sebelum mengembalikan sebagai JSON
+        df = replace_nan_with_none(df)
 
         return df.to_dict(orient='records')
-   
+    
+    @staticmethod
+    def calculate_sentiment_percentages(data):
+        total = len(data)
+        positive = sum(1 for item in data if item['predicted_label'] == 'Positif')
+        negative = total - positive
+        return {
+            'positive': (positive / total) * 100,
+            'negative': (negative / total) * 100
+        }
+
+    @staticmethod
+    def calculate_sentiment_percentages_by_topic(data):
+        topics = {}
+        for item in data:
+            topic = item.get('topic', 'unknown')
+            if topic not in topics:
+                topics[topic] = {'total': 0, 'positive': 0, 'negative': 0}
+            topics[topic]['total'] += 1
+            if item['predicted_label'] == 'Positif':
+                topics[topic]['positive'] += 1
+            else:
+                topics[topic]['negative'] += 1
+        
+        percentages_by_topic = {}
+        for topic, counts in topics.items():
+            percentages_by_topic[topic] = {
+                'positive': (counts['positive'] / counts['total']) * 100,
+                'negative': (counts['negative'] / counts['total']) * 100
+            }
+        
+        return percentages_by_topic
     
 
 

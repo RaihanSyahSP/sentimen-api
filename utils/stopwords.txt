@@ -64,9 +64,7 @@ begitupun
 bekerja
 belakang
 belakangan
-belum
 belumlah
-benar
 benarkah
 benarlah
 berada
@@ -117,13 +115,11 @@ biasa
 biasanya
 bila
 bilakah
-bisa
 bisakah
 boleh
 bolehkah
 bolehlah
 buat
-bukan
 bukankah
 bukanlah
 bukannya
@@ -131,9 +127,6 @@ bulan
 bung
 cara
 caranya
-cukup
-cukupkah
-cukuplah
 cuma
 dahulu
 dalam
@@ -233,8 +226,6 @@ dong
 dua
 dulu
 empat
-enggak
-enggaknya
 entah
 entahlah
 guna
@@ -272,14 +263,12 @@ itulah
 jadi
 jadilah
 jadinya
-jangan
 jangankan
 janganlah
 jauh
 jawab
 jawaban
 jawabnya
-jelas
 jelaskan
 jelaslah
 jelasnya
@@ -723,7 +712,6 @@ tetapi
 tiap
 tiba
 tiba-tiba
-tidak
 tidakkah
 tidaklah
 tiga
@@ -757,7 +745,6 @@ yakin
 yakni
 yang
 ada
-
 adalah
 adanya
 adapun
@@ -828,9 +815,7 @@ begitupun
 bekerja
 belakang
 belakangan
-belum
 belumlah
-benar
 benarkah
 benarlah
 berada
@@ -887,7 +872,6 @@ boleh
 bolehkah
 bolehlah
 buat
-bukan
 bukankah
 bukanlah
 bukannya
@@ -1000,8 +984,6 @@ dua
 dulu
 e
 empat
-enak
-enggak
 enggaknya
 entah
 entahlah
@@ -1051,7 +1033,6 @@ j
 jadi
 jadilah
 jadinya
-jangan
 jangankan
 janganlah
 jauh
@@ -1527,7 +1508,6 @@ tetapi
 tiap
 tiba
 tiba-tiba
-tidak
 tidakkah
 tidaklah
 tiga
@@ -1764,6 +1744,8 @@ dlu
 ny
 rrrrrr
 woyyyyy
+wkwkwk
+wkwkwkwk
 go
 dah
 jgan
@@ -1860,7 +1842,6 @@ ggh
 ama
 sj
 woooy
-juaraaa
 smuwa
 sik
 mba

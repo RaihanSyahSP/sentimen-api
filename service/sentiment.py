@@ -16,7 +16,7 @@ from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 # Load the pre-trained sentiment analysis model
-model = load_model('./saved_model/model-cnn-lstm.h5')
+model = load_model('./saved_model/model-cnn-lstm-no-testing.h5')
 
 
 class Sentiment:
@@ -127,42 +127,40 @@ class Sentiment:
         def replace_nan_with_none(data):
             return data.applymap(lambda x: None if pd.isna(x) else x)
 
-        # Convert list of texts into a DataFrame
         df = pd.DataFrame(data)
         
-        # Pastikan kolom 'predicted_label' ada, jika tidak, buat dan set semua nilai menjadi NaN
-        if 'predicted_label' not in df.columns:
-            df['predicted_label'] = np.nan
+        if 'predicted_sentiment' not in df.columns:
+            df['predicted_sentiment'] = np.nan
             df['probability_sentiment'] = np.nan
 
         # Filter dokumen yang belum diproses
-        to_process_df = df[df['predicted_label'].isna()]
+        # to_process_df = df[df['predicted_sentiment'].isna()]
 
-        if not to_process_df.empty:
+        if not df.empty:
             
             # # Text preprocessing
-            to_process_df['processed_text'] = to_process_df['full_text'].apply(lower_case)
-            to_process_df['processed_text'] = to_process_df['processed_text'].apply(remove_tweet_special)
-            to_process_df['processed_text'] = to_process_df['processed_text'].apply(remove_number)
-            to_process_df['processed_text'] = to_process_df['processed_text'].apply(remove_punctuation)
-            to_process_df['processed_text'] = to_process_df['processed_text'].apply(remove_whitespace_LT)
-            to_process_df['processed_text'] = to_process_df['processed_text'].apply(remove_whitespace_multiple)
-            to_process_df['processed_text'] = to_process_df['processed_text'].apply(remove_singl_char)
-            to_process_df['processed_text'] = to_process_df['processed_text'].apply(remove_repeated_char)
-            to_process_df['processed_text'] = to_process_df['processed_text'].apply(word_tokenize_wrapper)
-            to_process_df['processed_text'] = to_process_df['processed_text'].apply(normalized_term)
-            to_process_df['processed_text'] = to_process_df['processed_text'].apply(stem_wrapper)
-            to_process_df['processed_text'] = to_process_df['processed_text'].apply(stopwords_removal)
-            to_process_df['processed_text'] = to_process_df['processed_text'].apply(convert_negation)
-            to_process_df['processed_text'] = to_process_df['processed_text'].apply(' '.join)
+            df['processed_text'] = df['full_text'].apply(lower_case)
+            df['processed_text'] = df['processed_text'].apply(remove_tweet_special)
+            df['processed_text'] = df['processed_text'].apply(remove_number)
+            df['processed_text'] = df['processed_text'].apply(remove_punctuation)
+            df['processed_text'] = df['processed_text'].apply(remove_whitespace_LT)
+            df['processed_text'] = df['processed_text'].apply(remove_whitespace_multiple)
+            df['processed_text'] = df['processed_text'].apply(remove_singl_char)
+            df['processed_text'] = df['processed_text'].apply(remove_repeated_char)
+            df['processed_text'] = df['processed_text'].apply(word_tokenize_wrapper)
+            df['processed_text'] = df['processed_text'].apply(normalized_term)
+            df['processed_text'] = df['processed_text'].apply(stem_wrapper)
+            df['processed_text'] = df['processed_text'].apply(stopwords_removal)
+            df['processed_text'] = df['processed_text'].apply(convert_negation)
+            df['processed_text'] = df['processed_text'].apply(' '.join)
 
             print("Text preprocessing done!")
 
             # # Convert the text data to sequences
-            with open('./utils/tokenizer-cnn-lstm.pickle', 'rb') as handle:
+            with open('./utils/tokenizer-cnn-lstm-no-testing.pickle', 'rb') as handle:
                 tokenizer = pickle.load(handle)
 
-            sequences = tokenizer.texts_to_sequences(to_process_df['processed_text'])
+            sequences = tokenizer.texts_to_sequences(df['processed_text'])
             padded_sequences = pad_sequences(sequences, maxlen=50, truncating='post', padding='post')
 
             # # Predict the sentiment of the text data
@@ -188,11 +186,11 @@ class Sentiment:
             print("Prediction done!")
 
             # Menambahkan hasil prediksi dan probabilitas prediksi ke dalam data asli
-            to_process_df['predicted_label'] = predicted_labels
-            to_process_df['probability_sentiment'] = [predicted_probabilities[i]['positive'] if predicted_labels[i] == 'Positif' else predicted_probabilities[i]['negative'] for i in range(len(predicted_labels))]
+            df['predicted_sentiment'] = predicted_labels
+            df['probability_sentiment'] = [predicted_probabilities[i]['positive'] if predicted_labels[i] == 'Positif' else predicted_probabilities[i]['negative'] for i in range(len(predicted_labels))]
 
             # Menggabungkan hasil kembali ke dataframe asli
-            df.update(to_process_df)
+            df.update(df)
         
         # Ganti NaN dengan None sebelum mengembalikan sebagai JSON
         df = replace_nan_with_none(df)
@@ -202,7 +200,7 @@ class Sentiment:
     @staticmethod
     def calculate_sentiment_percentages(data):
         total = len(data)
-        positive = sum(1 for item in data if item['predicted_label'] == 'Positif')
+        positive = sum(1 for item in data if item['predicted_sentiment'] == 'Positif')
         negative = total - positive
         return {
             'positive': (positive / total) * 100,
@@ -217,7 +215,7 @@ class Sentiment:
             if topic not in topics:
                 topics[topic] = {'total': 0, 'positive': 0, 'negative': 0}
             topics[topic]['total'] += 1
-            if item['predicted_label'] == 'Positif':
+            if item['predicted_sentiment'] == 'Positif':
                 topics[topic]['positive'] += 1
             else:
                 topics[topic]['negative'] += 1

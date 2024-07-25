@@ -20,12 +20,7 @@ class Tweet:
         # Debugging output
         print("Result from DB:", result)
         return result
-    
-    def test_query():
-        result = list(db.tweets.find({'id_str': {'$in': [Int64("1723128018716237841"), Int64("1723128111926243816")]}}))
-        print("Test Query Result:", result)
 
-     
 
     def getTweetsByKeyword(keyword, start_date=None, end_date=None):
         match_stage = {
@@ -59,37 +54,6 @@ class Tweet:
         cursor = db.tweets.aggregate(pipeline)
         return list(cursor)
     
-    def getLabeledTweetsByKeyword(keyword, start_date=None, end_date=None):
-        match_stage = {
-            '$match': {
-                'full_text': {'$regex': keyword, '$options': 'i'},
-                'predicted_sentiment': {'$exists': True}
-            }
-        }
-
-        pipeline = [match_stage]
-
-        if start_date and end_date:
-            start_datetime = datetime.strptime(f"{start_date} 00:00:00 +0000", "%Y-%m-%d %H:%M:%S %z")
-            end_datetime = datetime.strptime(f"{end_date} 23:59:59 +0000", "%Y-%m-%d %H:%M:%S %z")
-            print(f"Filtering tweets from {start_datetime} to {end_datetime}")  # Debugging
-
-            add_fields_stage = {
-                '$addFields': {
-                    'parsed_date': {'$toDate': '$created_at'}
-                }
-            }
-            match_date_stage = {
-                '$match': {
-                    'parsed_date': {'$gte': start_datetime, '$lte': end_datetime}
-                }
-            }
-
-            pipeline.extend([add_fields_stage, match_date_stage])
-
-        cursor = db.tweets.aggregate(pipeline)
-        return list(cursor)
-        
     def updateSentiment(data):
         for item in data:
             # Use id_str instead of _id

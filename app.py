@@ -71,46 +71,7 @@ def classify_sentiment():
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-# @app.route('/classify-sentiment', methods=['GET'])
-# def get_result():
-#     try:
-#         keyword = request.args.get('keyword')
-#         # jumlah_tweet = request.args.get('jumlah_tweet', 1000)
-#         start_date = request.args.get('start_date') # Expected format: "YYYY-MM-DD"
-#         end_date = request.args.get('end_date')  # Expected format: "YYYY-MM-DD"
-        
-#         keyword_regex = f".*{keyword}.*"
-        
-#          # Check for labeled tweets in the given date range
-#         labeled_cursor = Tweet.getLabeledTweetsByKeyword(keyword=keyword_regex, start_date=start_date, end_date=end_date)
-
-#         if labeled_cursor:
-#             # Convert ObjectId to string
-#             labeled_data = []
-#             for tweet in labeled_cursor:
-#                 tweet['_id'] = str(tweet['_id'])
-#                 labeled_data.append(tweet)
-#             return jsonify(labeled_data), 200
-
-#         # If no labeled tweets found, get additional unlabeled tweets
-#         cursor = Tweet.getTweetsByKeyword(keyword=keyword_regex, start_date=start_date, end_date=end_date)
-
-#         if not cursor:
-#             return jsonify({"error": "No tweets found"}), 404
-
-#         # If there are tweets to be labeled, proceed with classification
-#         data = [tweet.copy() for tweet in cursor]
-#         for tweet in data:
-#             tweet['_id'] = str(tweet['_id'])
-
-#         sentiment = Sentiment.classify_sentiment(data=data)
-#         Tweet.updateSentiment(sentiment)
-
-#         return jsonify(sentiment), 200
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500     
-
+    
 @app.route('/visualize-sentiment', methods=['GET'])
 def visualize_sentiment():
     try:

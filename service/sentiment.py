@@ -165,7 +165,7 @@ class Sentiment:
 
             # # Predict the sentiment of the text data
             predictions = model.predict(padded_sequences)
-            # print(predictions)
+            print(predictions)
             predicted_labels = []
             predicted_probabilities = []  # Menyimpan probabilitas prediksi untuk semua kelas
 
@@ -199,9 +199,18 @@ class Sentiment:
     
     @staticmethod
     def calculate_sentiment_percentages(data):
-        total = len(data)
-        positive = sum(1 for item in data if item['predicted_sentiment'] == 'Positif')
+        data_with_sentiment = [item for item in data if 'predicted_sentiment' in item]
+        
+        if not data_with_sentiment:
+            return {
+                'positive': 0,
+                'negative': 0
+            }
+
+        total = len(data_with_sentiment)
+        positive = sum(1 for item in data_with_sentiment if item['predicted_sentiment'] == 'Positif')
         negative = total - positive
+        
         return {
             'positive': (positive / total) * 100,
             'negative': (negative / total) * 100
@@ -209,8 +218,13 @@ class Sentiment:
 
     @staticmethod
     def calculate_sentiment_percentages_by_topic(data):
+        data_with_sentiment = [item for item in data if 'predicted_sentiment' in item]
+        
+        if not data_with_sentiment:
+            return {}
+
         topics = {}
-        for item in data:
+        for item in data_with_sentiment:
             topic = item.get('topic', 'unknown')
             if topic not in topics:
                 topics[topic] = {'total': 0, 'positive': 0, 'negative': 0}
